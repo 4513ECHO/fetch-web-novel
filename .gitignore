@@ -1,3 +1,5 @@
-venv/
-*.txt
+*
+!*.py
+!README.md
+!LICENSE
 !requestments.txt
