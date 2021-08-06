@@ -31,6 +31,7 @@ optional arguments:
   -h, --help    show this help message and exit
   -N, --narou   set the destination website to 'Shosetsuka ni Narou'
   -H, --hameln  set the destination website to 'Hameln'
+  -J, --toSJIS  create a file in Shift-JIS format
 ```
 
 | オプション   |        |
@@ -39,6 +40,7 @@ optional arguments:
 | <novel_code> | 取得したい小説のコードを設定します |
 | -N, --narou  | 取得先のWebサイトを「小説家になろう」に設定します |
 | -H, --hameln | 取得先のWebサイトを「小説家になろう」に設定します |
+| -J, --toSJIS | Shift-JIS形式のファイルを作成します |
 
 ## License
 
