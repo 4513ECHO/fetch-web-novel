@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser, Namespace
+import codecs
 import enum
 import time
 from typing import Union, Optional, Callable
@@ -70,20 +71,18 @@ class Novel:
         return "\n".join(text)
 
 
-# def to_SJIS(self, text: str) -> str:
-#     return text
-
-
-def write_file(
-    name: Union[str, int], text: str, directory: Optional[str] = None
-) -> None:
-    if directory is None:
-        with open(f"{name}.txt", "w") as f:
-            f.write(text)
-            return
-    os.makedirs(os.path.expanduser(directory), exist_ok=True)
-    with open(f"{directory}/{name}.txt", "w") as f:
+def write_file(name: Union[str, int], text: str) -> str:
+    with open(f"{name}.txt", "w") as f:
         f.write(text)
+        return f.name
+
+
+def write_sjis(file: str) -> None:
+    with codecs.open(file, "r", "utf-8") as f_utf, codecs.open(
+        f"sjis_{file}", "w", "shift_jis"
+    ) as f_sjis:
+        text = f_utf.read()
+        f_sjis.write(text)
 
 
 # def show_progress(max: int, current: int) -> None:
@@ -115,7 +114,11 @@ def get_args() -> Namespace:
     #     type=lambda x: map(int, x.split("-"))[:2],
     # )
     # parser.add_argument("-d", "--dirname", default=None)
-    # parser.add_argument("-J", "--toSJIS", action="store_true")
+    parser.add_argument(
+        "-J", "--toSJIS",
+        action="store_true",
+        help="create a file in Shift-JIS format"
+    )
     args = parser.parse_args()
     return args
 
@@ -127,11 +130,18 @@ def main() -> None:
     elif args.hameln:
         website = Website.hameln
     novel: Novel = Novel(website, args.novel_code)
-    directory: str = novel.novel_code
+    os.makedirs(novel.novel_code, exist_ok=True)
+    os.chdir(novel.novel_code)
+    if args.toSJIS:
+        os.makedirs("sjis", exist_ok=True)
+        os.chdir("sjis")
+
     max_num: int = novel.get_backnumber()
     for x in range(1, max_num + 1):
         honbun: str = novel.get_honbun(x)
-        write_file(x, honbun, directory)
+        file = write_file(x, honbun)
+        if args.toSJIS:
+            write_sjis(file)
         time.sleep(1)
         print(f"\rWriting... ({x} / {max_num})", end="")
     print("\nDone.")
