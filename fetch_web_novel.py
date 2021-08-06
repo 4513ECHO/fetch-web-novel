@@ -16,7 +16,7 @@ class Website(enum.Enum):
 
 
 headers = {
-    "User-agent": "fetch-web-novel Crawler/0.1.0 (https://github.com/4513ECHO/fetch-web-novel)",
+    "User-agent": "fetch-web-novel Crawler/0.2.0 (https://github.com/4513ECHO/fetch-web-novel)",
     "Crawl-delay": "3",
 }
 site_data = {
