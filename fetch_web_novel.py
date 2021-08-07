@@ -5,6 +5,7 @@ import enum
 import time
 from typing import Union, Optional, Callable
 import os
+import sys
 
 from bs4 import BeautifulSoup, element
 import requests
@@ -150,10 +151,12 @@ def main() -> None:
 def return_status(func: Callable) -> int:
     try:
         func()
-        return 0
+        sys.exit(0)
+    except KeyboardInterrupt:
+        sys.exit(130)
     except Exception as err:
         print(f"[ERROR]:{err}")
-        return 1
+        sys.exit(1)
 
 
 if __name__ == "__main__":
