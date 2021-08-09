@@ -38,7 +38,8 @@ site_data = {
 }
 
 _error_handler_registered = False
-_str_sjis_mapping={"頬": "0x960x6a"}
+# https://www.dsri.jp/database_service/jicfsifdb/mojicheck.html
+_str_sjis_mapping={"頬": "0x966a"}
 def _error_handler(err: UnicodeError) -> tuple[bytes]:
     (encodeing, text, i, j, msg) = err.args
     return (_str_sjis_mapping.get(text[i], ""), j)
@@ -89,7 +90,7 @@ def write_sjis(file: str) -> None:
         codecs.register_error('my_custom_handler', _error_handler)
         _error_handler_registered = True
     with codecs.open(file, "r", "utf-8") as f_utf, codecs.open(
-        f"sjis_{file}", "w", "cp932",#errors='my_custom_handler'
+        f"sjis_{file}", "w", "cp932", errors='my_custom_handler'
     ) as f_sjis:
         text = f_utf.read()
         f_sjis.write(text)
