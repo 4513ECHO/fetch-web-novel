@@ -89,11 +89,13 @@ def write_sjis(file: str) -> None:
     if not _error_handler_registered:
         codecs.register_error('my_custom_handler', _error_handler)
         _error_handler_registered = True
-    with codecs.open(file, "r", "utf-8") as f_utf, codecs.open(
-        f"sjis_{file}", "w", "cp932", errors='my_custom_handler'
-    ) as f_sjis:
+    os.chdir("sjis")
+    with (codecs.open(f"../{file}", "r", "utf-8") as f_utf,
+        codecs.open(file, "w", "cp932", errors='my_custom_handler') as f_sjis
+    ):
         text = f_utf.read()
         f_sjis.write(text)
+    os.chdir("../")
 
 
 # def show_progress(max: int, current: int) -> None:
@@ -145,14 +147,15 @@ def main() -> None:
     os.chdir(novel.novel_code)
     if args.toSJIS:
         os.makedirs("sjis", exist_ok=True)
-        os.chdir("sjis")
 
     max_num: int = novel.get_backnumber()
     for x in range(1, max_num + 1):
         honbun: str = novel.get_honbun(x)
-        file = write_file(x, honbun)
         if args.toSJIS:
+            file = write_file(x, honbun)
             write_sjis(file)
+        else:
+            file = write_file(x, honbun)
         time.sleep(1)
         print(f"\rWriting... ({x} / {max_num})", end="")
     print("\nDone.")
