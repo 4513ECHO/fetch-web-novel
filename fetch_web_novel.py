@@ -39,10 +39,13 @@ site_data = {
 
 _error_handler_registered = False
 # https://www.dsri.jp/database_service/jicfsifdb/mojicheck.html
-_str_sjis_mapping={"頬": "0x966a"}
+_str_sjis_mapping = {"頬": "0x966a"}
+
+
 def _error_handler(err: UnicodeError) -> tuple[bytes]:
     (encodeing, text, i, j, msg) = err.args
     return (_str_sjis_mapping.get(text[i], ""), j)
+
 
 class Novel:
     def __init__(self, website: Website, novel_code: str) -> None:
@@ -87,13 +90,13 @@ def write_file(name: Union[str, int], text: str) -> str:
 def write_sjis(file: str) -> None:
     global _error_handler_registered
     if not _error_handler_registered:
-        codecs.register_error('my_custom_handler', _error_handler)
+        codecs.register_error("my_custom_handler", _error_handler)
         _error_handler_registered = True
     os.chdir("sjis")
-    with (codecs.open(f"../{file}", "r", "utf-8") as f_utf,
-        codecs.open(file, "w", "cp932", errors='my_custom_handler') as f_sjis
-    ):
-        text = f_utf.read()
+    with codecs.open(f"../{file}", "r", "utf-8") as f_utf, codecs.open(
+        file, "w", "cp932", errors="my_custom_handler"
+    ) as f_sjis:
+        text = '\r\n'.join(f_utf.read().splitlines())
         f_sjis.write(text)
     os.chdir("../")
 
@@ -104,18 +107,20 @@ def write_sjis(file: str) -> None:
 
 def get_args() -> Namespace:
     parser = ArgumentParser(
-        description="CLI tool to retrieve the contents of "\
-                    "a specified novel from a novel submission website",
-        usage="./%(prog)s [options...] <novel_code>"
+        description="CLI tool to retrieve the contents of "
+        "a specified novel from a novel submission website",
+        usage="./%(prog)s [options...] <novel_code>",
     )
     site = parser.add_mutually_exclusive_group(required=True)
     site.add_argument(
-        "-N", "--narou",
+        "-N",
+        "--narou",
         action="store_true",
         help="set the destination website to 'Shosetsuka ni Narou'",
     )
     site.add_argument(
-        "-H", "--hameln",
+        "-H",
+        "--hameln",
         action="store_true",
         help="set the destination website to 'Hameln'",
     )
@@ -128,9 +133,7 @@ def get_args() -> Namespace:
     # )
     # parser.add_argument("-d", "--dirname", default=None)
     parser.add_argument(
-        "-J", "--toSJIS",
-        action="store_true",
-        help="create a file in Shift-JIS format"
+        "-J", "--toSJIS", action="store_true", help="create a file in Shift-JIS format"
     )
     args = parser.parse_args()
     return args
