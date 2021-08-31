@@ -1,4 +1,5 @@
-*
-!*.py
-!*.md
-!requestments.txt
+*/*
+!**.py
+!**.md
+!poetry.lock
+!pyproject.toml
