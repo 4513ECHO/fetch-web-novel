@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-from argparse import ArgumentParser, Namespace
 import codecs
 import enum
-import time
-from typing import Union, Optional, Callable
 import os
 import sys
+import time
+from argparse import ArgumentParser, Namespace
+from typing import Callable, Optional, Union
 
-from bs4 import BeautifulSoup, element
 import requests
+from bs4 import BeautifulSoup, element
 
 
 class Website(enum.Enum):
@@ -96,7 +96,7 @@ def write_sjis(file: str) -> None:
     with codecs.open(f"../{file}", "r", "utf-8") as f_utf, codecs.open(
         file, "w", "cp932", errors="my_custom_handler"
     ) as f_sjis:
-        text = '\r\n'.join(f_utf.read().splitlines())
+        text = "\r\n".join(f_utf.read().splitlines())
         f_sjis.write(text)
     os.chdir("../")
 
