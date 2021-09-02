@@ -175,5 +175,9 @@ def return_status(func: Callable) -> int:
         sys.exit(1)
 
 
-if __name__ == "__main__":
+def script() -> None:
     return_status(main)
+
+
+if __name__ == "__main__":
+    script()

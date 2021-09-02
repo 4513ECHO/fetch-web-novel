@@ -4,6 +4,12 @@ version = "0.2.3"
 description = "CLI tool to retrieve the contents of a specified novel from a novel posting site"
 authors = ["Hibiki(4513ECHO) <4513echo@gmail.com>"]
 license = "MIT"
+packages = [
+  { include = "src" },
+]
+
+[tool.poetry.scripts]
+fwn = "src.fetch-web-novel.main:script"
 
 [tool.poetry.dependencies]
 python = "^3.9"
