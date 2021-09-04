@@ -139,6 +139,20 @@ def get_args() -> Namespace:
     return args
 
 
+def return_status(func: Callable[..., None]) -> Callable:
+    def wrapper(*args, **kwargs):  # type: ignore
+        try:
+            func(*args, **kwargs)
+        except KeyboardInterrupt:
+            sys.exit(130)
+        except Exception as err:
+            print(f"[ERROR]:{err}")
+            sys.exit(1)
+
+    return wrapper
+
+
+@return_status
 def main() -> None:
     args: Namespace = get_args()
     if args.narou:
@@ -164,20 +178,5 @@ def main() -> None:
     print("\nDone.")
 
 
-def return_status(func: Callable) -> int:
-    try:
-        func()
-        sys.exit(0)
-    except KeyboardInterrupt:
-        sys.exit(130)
-    except Exception as err:
-        print(f"[ERROR]:{err}")
-        sys.exit(1)
-
-
-def script() -> None:
-    return_status(main)
-
-
 if __name__ == "__main__":
-    script()
+    main()
