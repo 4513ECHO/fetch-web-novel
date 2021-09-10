@@ -1,13 +1,18 @@
 #!/usr/bin/env python
+from __future__ import annotations
+
 import codecs
 import enum
+import logging
 import os
+import platform
 import sys
 import time
 from argparse import ArgumentParser, Namespace
 from typing import Callable, Optional, Union
 
 import requests
+import toml
 from bs4 import BeautifulSoup, element
 
 
@@ -16,8 +21,24 @@ class Website(enum.Enum):
     hameln = enum.auto()
 
 
+def user_agent() -> str:
+    pyproject_toml = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), "..", "..", "pyproject.toml")
+    )
+    poetry = toml.load(open(pyproject_toml))["tool"]["poetry"]
+    _ua = "fetch-web-novel/{0} (compatible; python-requests/{1}; +{2}) {3} {4}".format(
+        poetry["version"],
+        poetry["dependencies"]["requests"].replace("^", ""),
+        poetry["repository"],
+        f"{platform.system()}-{platform.processor()}",
+        f"python-{platform.python_version()}",
+    )
+    return _ua
+
+
+logger = logging.getLogger(__name__)
 headers = {
-    "User-agent": "fetch-web-novel Crawler/0.2.3 (https://github.com/4513ECHO/fetch-web-novel)",
+    "User-agent": user_agent(),
     "Crawl-delay": "3",
 }
 site_data = {
@@ -36,15 +57,6 @@ site_data = {
         "backnumber": ".ss > div:first-of-type",
     },
 }
-
-_error_handler_registered = False
-# https://www.dsri.jp/database_service/jicfsifdb/mojicheck.html
-_str_sjis_mapping = {"頬": "0x966a"}
-
-
-def _error_handler(err: UnicodeError) -> tuple[bytes]:
-    (encodeing, text, i, j, msg) = err.args
-    return (_str_sjis_mapping.get(text[i], ""), j)
 
 
 class Novel:
@@ -125,15 +137,16 @@ def get_args() -> Namespace:
         help="set the destination website to 'Hameln'",
     )
     parser.add_argument("novel_code", help="set the code of the novel to be retrieve")
-    # parser.add_argument(
-    #     "-b", "--back-number",
-    #     default=None,
-    #     metavar="<INT>-<INT>"
-    #     type=lambda x: map(int, x.split("-"))[:2],
-    # )
-    # parser.add_argument("-d", "--dirname", default=None)
+    parser.add_argument("-r", "--range", type=int, help="", default=1)
     parser.add_argument(
         "-J", "--toSJIS", action="store_true", help="create a file in Shift-JIS format"
+    )
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=user_agent(),
+        help="Show version and exit",
     )
     args = parser.parse_args()
     return args
@@ -166,13 +179,19 @@ def main() -> None:
         os.makedirs("sjis", exist_ok=True)
 
     max_num: int = novel.get_backnumber()
-    for x in range(1, max_num + 1):
+    print(f"{max_num=}")
+    for x in range(args.range, max_num + 1):
+        print(f"{x=}")
         honbun: str = novel.get_honbun(x)
+        print("get_honbun")
         if args.toSJIS:
             file = write_file(x, honbun)
+            print("write_file")
             write_sjis(file)
+            print("write_file2")
         else:
             file = write_file(x, honbun)
+            print("write_file")
         time.sleep(1)
         print(f"\rWriting... ({x} / {max_num})", end="")
     print("\nDone.")
