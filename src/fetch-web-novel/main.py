@@ -100,13 +100,9 @@ def write_file(name: Union[str, int], text: str) -> str:
 
 
 def write_sjis(file: str) -> None:
-    global _error_handler_registered
-    if not _error_handler_registered:
-        codecs.register_error("my_custom_handler", _error_handler)
-        _error_handler_registered = True
     os.chdir("sjis")
     with codecs.open(f"../{file}", "r", "utf-8") as f_utf, codecs.open(
-        file, "w", "cp932", errors="my_custom_handler"
+        file, "w", "cp932"
     ) as f_sjis:
         text = "\r\n".join(f_utf.read().splitlines())
         f_sjis.write(text)
@@ -137,7 +133,7 @@ def get_args() -> Namespace:
         help="set the destination website to 'Hameln'",
     )
     parser.add_argument("novel_code", help="set the code of the novel to be retrieve")
-    parser.add_argument("-r", "--range", type=int, help="", default=1)
+    parser.add_argument("-s", "--start", type=int, default=1)
     parser.add_argument(
         "-J", "--toSJIS", action="store_true", help="create a file in Shift-JIS format"
     )
@@ -161,7 +157,6 @@ def return_status(func: Callable[..., None]) -> Callable:
         except Exception as err:
             print(f"[ERROR]:{err}")
             sys.exit(1)
-
     return wrapper
 
 
@@ -180,7 +175,7 @@ def main() -> None:
 
     max_num: int = novel.get_backnumber()
     print(f"{max_num=}")
-    for x in range(args.range, max_num + 1):
+    for x in range(args.start, max_num + 1):
         print(f"{x=}")
         honbun: str = novel.get_honbun(x)
         print("get_honbun")
