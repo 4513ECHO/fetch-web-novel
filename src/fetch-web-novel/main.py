@@ -1,17 +1,21 @@
 #!/usr/bin/env python
 from __future__ import annotations
 
+import asyncio
 import codecs
 import enum
+import io
 import logging
 import os
 import platform
 import sys
 import time
+import traceback
 from argparse import ArgumentParser, Namespace
 from typing import Callable, Optional, Union
 
-import requests
+import aiofiles
+import aiohttp
 import toml
 from bs4 import BeautifulSoup, element
 
@@ -26,9 +30,9 @@ def user_agent() -> str:
         os.path.join(os.path.dirname(__file__), "..", "..", "pyproject.toml")
     )
     poetry = toml.load(open(pyproject_toml))["tool"]["poetry"]
-    _ua = "fetch-web-novel/{0} (compatible; python-requests/{1}; +{2}) {3} {4}".format(
+    _ua = "fetch-web-novel/{0} (compatible; python-aiohttp/{1}; +{2}) {3} {4}".format(
         poetry["version"],
-        poetry["dependencies"]["requests"].replace("^", ""),
+        poetry["dependencies"]["aiohttp"].replace("^", ""),
         poetry["repository"],
         f"{platform.system()}-{platform.processor()}",
         f"python-{platform.python_version()}",
@@ -65,20 +69,22 @@ class Novel:
         self.site_data: dict[str] = site_data[self.website]
         self.novel_code: str = novel_code
 
-    def _request(self, num: int) -> BeautifulSoup:
-        res: requests.medels.Response = requests.get(
-            self.site_data["url"].format(self.novel_code, num),
-            headers=self.site_data["headers"],
-        )
-        return BeautifulSoup(res.text, "html.parser")
+    async def _request(self, num: int) -> BeautifulSoup:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                self.site_data["url"].format(self.novel_code, num),
+                headers=self.site_data["headers"],
+            ) as res:
+                html = await res.text()
+                return BeautifulSoup(html, "html.parser")
 
-    def get_backnumber(self) -> int:
-        soup: BeautifulSoup = self._request(1)
+    async def get_backnumber(self) -> int:
+        soup: BeautifulSoup = await self._request(1)
         backnumber: element.Tag = soup.select_one(self.site_data["backnumber"]).text
         return int(backnumber.split("/")[-1])
 
-    def get_honbun(self, num: int) -> str:
-        soup: BeautifulSoup = self._request(num)
+    async def get_honbun(self, num: int) -> str:
+        soup: BeautifulSoup = await self._request(num)
         honbun: element.Tag = soup.select_one(self.site_data["honbun"])
         if self.site_data["name"] == "narou":
             return self._narou(honbun)
@@ -93,19 +99,29 @@ class Novel:
         return "\n".join(text)
 
 
-def write_file(name: Union[str, int], text: str) -> str:
-    with open(f"{name}.txt", "w") as f:
-        f.write(text)
+async def write_file(name: Union[str, int], text: str) -> str:
+    async with aiofiles.open(f"{name}.txt", "w") as f:
+        await f.write(text)
         return f.name
 
 
-def write_sjis(file: str) -> None:
+async def write_sjis(file: str) -> None:
     os.chdir("sjis")
-    with codecs.open(f"../{file}", "r", "utf-8") as f_utf, codecs.open(
-        file, "w", "cp932"
-    ) as f_sjis:
-        text = "\r\n".join(f_utf.read().splitlines())
-        f_sjis.write(text)
+    async with aiofiles.open(f"../{file}", "rb") as src, aiofiles.open(
+        file, "wb"
+    ) as dest:
+        codecs.register_error("my_replace", lambda exc: "??")
+        stream = codecs.StreamRecoder(
+            src,
+            codecs.getencoder("cp932"),
+            codecs.getdecoder("utf-8"),
+            codecs.getreader("utf-8"),
+            codecs.getwriter("cp932"),
+            "my_replace",
+        )
+        texts = stream.decode("cp932").readlines()
+        await dest.write("\r\n".join(texts))
+        await dest.flush()
     os.chdir("../")
 
 
@@ -149,19 +165,20 @@ def get_args() -> Namespace:
 
 
 def return_status(func: Callable[..., None]) -> Callable:
-    def wrapper(*args, **kwargs):  # type: ignore
+    async def wrapper(*args, **kwargs):  # type: ignore
         try:
-            func(*args, **kwargs)
+            await func(*args, **kwargs)
         except KeyboardInterrupt:
             sys.exit(130)
-        except Exception as err:
-            print(f"[ERROR]:{err}")
+        except Exception:
+            traceback.print_exc()
             sys.exit(1)
+
     return wrapper
 
 
 @return_status
-def main() -> None:
+async def main() -> None:
     args: Namespace = get_args()
     if args.narou:
         website = Website.narou
@@ -173,24 +190,19 @@ def main() -> None:
     if args.toSJIS:
         os.makedirs("sjis", exist_ok=True)
 
-    max_num: int = novel.get_backnumber()
-    print(f"{max_num=}")
+    max_num: int = await novel.get_backnumber()
     for x in range(args.start, max_num + 1):
-        print(f"{x=}")
-        honbun: str = novel.get_honbun(x)
-        print("get_honbun")
+        honbun: str = await novel.get_honbun(x)
         if args.toSJIS:
-            file = write_file(x, honbun)
-            print("write_file")
-            write_sjis(file)
-            print("write_file2")
+            file = await write_file(x, honbun)
+            await write_sjis(file)
         else:
-            file = write_file(x, honbun)
-            print("write_file")
+            file = await write_file(x, honbun)
         time.sleep(1)
         print(f"\rWriting... ({x} / {max_num})", end="")
     print("\nDone.")
 
 
 if __name__ == "__main__":
-    main()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
