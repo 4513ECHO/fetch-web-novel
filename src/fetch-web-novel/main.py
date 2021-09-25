@@ -107,21 +107,13 @@ async def write_file(name: Union[str, int], text: str) -> str:
 
 async def write_sjis(file: str) -> None:
     os.chdir("sjis")
-    async with aiofiles.open(f"../{file}", "rb") as src, aiofiles.open(
-        file, "wb"
-    ) as dest:
-        codecs.register_error("my_replace", lambda exc: "??")
-        stream = codecs.StreamRecoder(
-            src,
-            codecs.getencoder("cp932"),
-            codecs.getdecoder("utf-8"),
-            codecs.getreader("utf-8"),
-            codecs.getwriter("cp932"),
-            "my_replace",
-        )
-        texts = stream.decode("cp932").readlines()
-        await dest.write("\r\n".join(texts))
-        await dest.flush()
+    codecs.register_error("my_replace", lambda exc: "??")
+    encoder = codecs.getincrementalencoder("cp932")(errors="my_replace")
+    async with aiofiles.open(f"../{file}", "r") as src:
+        async with aiofiles.open(file, "wb") as dest:
+            text = encoder.encode(await src.read())
+            await dest.write(text.replace(b"\n", b"\r\n"))
+            await dest.flush()
     os.chdir("../")
 
 
@@ -165,9 +157,10 @@ def get_args() -> Namespace:
 
 
 def return_status(func: Callable[..., None]) -> Callable:
-    async def wrapper(*args, **kwargs):  # type: ignore
+    def wrapper(*args, **kwargs):  # type: ignore
         try:
-            await func(*args, **kwargs)
+            loop = asyncio.get_event_loop()
+            loop.run_until_complete(func(*args, **kwargs))
         except KeyboardInterrupt:
             sys.exit(130)
         except Exception:
@@ -204,5 +197,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    main()
