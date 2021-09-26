@@ -99,16 +99,15 @@ class Novel:
         return "\n".join(text)
 
 
-async def write_file(name: Union[str, int], text: str) -> str:
-    async with aiofiles.open(f"{name}.txt", "w") as f:
+async def write_file(name: int, text: str) -> str:
+    async with aiofiles.open(f"{name:03}.txt", "w") as f:
         await f.write(text)
         return f.name
 
 
 async def write_sjis(file: str) -> None:
     os.chdir("sjis")
-    codecs.register_error("my_replace", lambda exc: "??")
-    encoder = codecs.getincrementalencoder("cp932")(errors="my_replace")
+    encoder = codecs.getincrementalencoder("cp932")(errors="replace")
     async with aiofiles.open(f"../{file}", "r") as src:
         async with aiofiles.open(file, "wb") as dest:
             text = encoder.encode(await src.read())
