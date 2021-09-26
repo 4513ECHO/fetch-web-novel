@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fetch-web-novel"
-version = "0.2.3"
+version = "0.3.0"
 description = "CLI tool to retrieve the contents of a specified novel from a novel posting site"
 authors = ["Hibiki(4513ECHO) <4513echo@gmail.com>"]
 license = "MIT"
