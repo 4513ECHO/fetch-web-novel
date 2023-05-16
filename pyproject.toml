@@ -2,7 +2,7 @@
 name = "fetch-web-novel"
 version = "0.3.0"
 description = "CLI tool to retrieve the contents of a specified novel from a novel posting site"
-authors = ["Hibiki(4513ECHO) <4513echo@gmail.com>"]
+authors = ["Hibiki(4513ECHO) <mail@4513echo.dev>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/4513ECHO/fetch-web-novel"
